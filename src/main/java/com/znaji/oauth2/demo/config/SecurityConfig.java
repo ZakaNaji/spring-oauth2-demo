@@ -1,4 +1,4 @@
-package com.znaji.oauth2.demo.controllers.config;
+package com.znaji.oauth2.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -22,11 +23,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeyClockRoleAuthoritiesConverter());
         http.authorizeHttpRequests(authConfig -> authConfig
-                .requestMatchers("/secure").authenticated()
+                .requestMatchers("/secure", "/secure-api").hasRole("ADMIN")
                 .anyRequest().permitAll());
         http.formLogin(Customizer.withDefaults());
         http.oauth2Login(Customizer.withDefaults());
+        http.oauth2ResourceServer(resourceServerConfig ->
+                resourceServerConfig.jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
     }
 
