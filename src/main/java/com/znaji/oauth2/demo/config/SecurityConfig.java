@@ -1,5 +1,8 @@
 package com.znaji.oauth2.demo.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -21,6 +24,9 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    @Autowired
+    private OAuth2ResourceServerProperties oAuth2ResourceServerProperties;
+
     @Bean
     public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
@@ -30,8 +36,13 @@ public class SecurityConfig {
                 .anyRequest().permitAll());
         http.formLogin(Customizer.withDefaults());
         http.oauth2Login(Customizer.withDefaults());
-        http.oauth2ResourceServer(resourceServerConfig ->
-                resourceServerConfig.jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+        //http.oauth2ResourceServer(resourceServerConfig ->
+        //        resourceServerConfig.jwt(jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+        http.oauth2ResourceServer(config ->
+                config.opaqueToken(opaqueTokenConfigurer -> opaqueTokenConfigurer
+                        .authenticationConverter(new KeyClockOpaqueTokenConverter())
+                        .introspectionClientCredentials(oAuth2ResourceServerProperties.getOpaquetoken().getClientId(), oAuth2ResourceServerProperties.getOpaquetoken().getClientSecret())
+                        .introspectionUri(oAuth2ResourceServerProperties.getOpaquetoken().getIntrospectionUri())));
         return http.build();
     }
 
